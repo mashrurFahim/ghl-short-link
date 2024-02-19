@@ -8,6 +8,9 @@ import { json } from "body-parser";
 
 const path = __dirname + "/ui/dist/";
 
+// Import the fetch module
+const fetch = require('node-fetch');
+
 dotenv.config();
 const app: Express = express();
 app.use(json({ type: 'application/json' }))
@@ -97,7 +100,30 @@ app.get("/example-api-call-location", async (req: Request, res: Response) => {
 })` sets up a route for handling HTTP POST requests to the "/example-webhook-handler" endpoint. The below POST
 api can be used to subscribe to various webhook events configured for the app. */
 app.post("/vercle-short-link-webhook",async (req: Request, res: Response) => {
-    console.log(req.body)
+    const { Authorization } = req.headers
+
+    if(Authorization !== 'sk_boNNJRd6nXlz2vUm') {
+      return res.status(401).send("Unauthorized")
+    }
+
+
+    const url = 'https://api.short.io/links';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        Authorization: 'sk_boNNJRd6nXlz2vUm'
+      },
+      body: JSON.stringify(req.body)
+    };
+
+    const response = await fetch(url, options);
+    const data = await response.json();
+
+    console.log(data)
+
+    res.send(data)
 })
 
 

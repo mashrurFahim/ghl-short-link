@@ -96,7 +96,7 @@ app.get("/example-api-call-location", async (req: Request, res: Response) => {
     console.log(req.body)
 })` sets up a route for handling HTTP POST requests to the "/example-webhook-handler" endpoint. The below POST
 api can be used to subscribe to various webhook events configured for the app. */
-app.post("/example-webhook-handler",async (req: Request, res: Response) => {
+app.post("/vercle-short-link-webhook",async (req: Request, res: Response) => {
     console.log(req.body)
 })
 

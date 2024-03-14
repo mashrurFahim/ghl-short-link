@@ -5,11 +5,10 @@ import dotenv from "dotenv";
 import { GHL } from "./ghl";
 import * as CryptoJS from 'crypto-js'
 import { json } from "body-parser";
+import axios from "axios";
 
 const path = __dirname + "/ui/dist/";
 
-// Import the fetch module
-const fetch = require('node-fetch');
 
 dotenv.config();
 const app: Express = express();
@@ -29,104 +28,46 @@ const port = process.env.PORT;
 /*`app.get("/authorize-handler", async (req: Request, res: Response) => { ... })` sets up an example how you can authorization requests */
 app.get("/authorize-handler", async (req: Request, res: Response) => {
   const { code } = req.query;
+  if (!code) {
+    return res.status(403).send("Unauthorized code");
+  }
   await ghl.authorizationHandler(code as string);
-  res.redirect("https://app.gohighlevel.com/");
-});
-
-/*`app.get("/example-api-call", async (req: Request, res: Response) => { ... })` shows you how you can use ghl object to make get requests
- ghl object in abstract would handle all of the authorization part over here. */
-app.get("/example-api-call", async (req: Request, res: Response) => {
-  if (ghl.checkInstallationExists(req.query.companyId as string)) {
-    try {
-      const request = await ghl
-        .requests(req.query.companyId as string)
-        .get(`/users/search?companyId=${req.query.companyId}`, {
-          headers: {
-            Version: "2021-07-28",
-          },
-        });
-      return res.send(request.data);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  return res.send("Installation for this company does not exists");
-});
-
-/*`app.get("/example-api-call-location", async (req: Request, res: Response) => { ... })` shows you how you can use ghl object to make get requests
- ghl object in abstract would handle all of the authorization part over here. */
-app.get("/example-api-call-location", async (req: Request, res: Response) => {
-  /* The line `if(ghl.checkInstallationExists(req.params.locationId)){` is checking if an
-    installation already exists for a specific location. It calls the `checkInstallationExists`
-    method of the `GHL` class and passes the `locationId` as a parameter. This method checks if
-    there is an existing installation for the provided locationId and returns a boolean value
-    indicating whether the installation exists or not. */
-  try {
-    if (ghl.checkInstallationExists(req.params.locationId)) {
-      const request = await ghl
-        .requests(req.query.locationId as string)
-        .get(`/contacts/?locationId=${req.query.locationId}`, {
-          headers: {
-            Version: "2021-07-28",
-          },
-        });
-      return res.send(request.data);
-    } else {
-      /* NOTE: This flow would only work if you have a distribution type of both Location & Company & OAuth read-write scopes are configured. 
-        The line `await ghl.getLocationTokenFromCompanyToken(req.query.companyId as string, req.query.locationId as string)`
-         is calling the `getLocationTokenFromCompanyToken` method of the
-        `GHL` class. This method is used to retrieve the location token for a specific location within a company. */
-      await ghl.getLocationTokenFromCompanyToken(
-        req.query.companyId as string,
-        req.query.locationId as string
-      );
-      const request = await ghl
-        .requests(req.query.locationId as string)
-        .get(`/contacts/?locationId=${req.query.locationId}`, {
-          headers: {
-            Version: "2021-07-28",
-          },
-        });
-      return res.send(request.data);
-    }
-  } catch (error) {
-    console.log(error);
-    res.send(error).status(400)
-  }
+  res.status(200).send("Authorized");
 });
 
 /*`app.post("example-webhook-handler",async (req: Request, res: Response) => {
     console.log(req.body)
 })` sets up a route for handling HTTP POST requests to the "/example-webhook-handler" endpoint. The below POST
 api can be used to subscribe to various webhook events configured for the app. */
-app.post("/vercle-short-link-webhook",async (req: Request, res: Response) => {
-    const { appkey } = req.headers
-
-    console.log(req.headers);
-    console.log(req.body);
-    console.log(appkey);
-    if(appkey !== 'sk_boNNJRd6nXlz2vUm') {
-      return res.status(401).send("Unauthorized")
-    }
-
+app.post("/create-short-link",async (req: Request, res: Response) => {
+    
+    const { vsl_short_io_auth, ...newBody } = req.body
 
     const url = 'https://api.short.io/links';
     const options = {
       method: 'POST',
+      url,
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
-        Authorization: 'sk_boNNJRd6nXlz2vUm'
+        Authorization: vsl_short_io_auth
       },
-      body: JSON.stringify(req.body)
+      data: JSON.stringify(req.body)
     };
 
-    const response = await fetch(url, options);
-    const data = await response.json();
-
-    console.log(data)
-
-    res.send(data)
+    try {
+      const response = await axios.request(options);
+      const data = await response.data();
+      res.status(201).send(data)
+    } catch (error: any) {
+      if(error.response){
+        return res.status(error.response.status).send(error.response.data)
+      } else if(error.request){
+        return res.status(400).send(error.request)
+      } else {
+        return res.status(400).send(error.message)
+      }
+    }
 })
 
 

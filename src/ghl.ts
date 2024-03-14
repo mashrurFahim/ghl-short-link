@@ -20,11 +20,6 @@ export class GHL {
  * pair.
  */
   async authorizationHandler(code: string) {
-    if (!code) {
-      console.warn(
-        "Please provide code when making call to authorization Handler"
-      );
-    }
     await this.generateAccessTokenRefreshTokenPair(code);
   }
 

@@ -35,13 +35,10 @@ app.get("/authorize-handler", async (req: Request, res: Response) => {
   res.status(200).send("Authorized");
 });
 
-/*`app.post("example-webhook-handler",async (req: Request, res: Response) => {
-    console.log(req.body)
-})` sets up a route for handling HTTP POST requests to the "/example-webhook-handler" endpoint. The below POST
-api can be used to subscribe to various webhook events configured for the app. */
+// webhook for the app
 app.post("/create-short-link",async (req: Request, res: Response) => {
     
-    const { vsl_short_io_auth, ...newBody } = req.body
+    const { vsl_short_io_auth, ...newBody } = req.body.data
 
     const url = 'https://api.short.io/links';
     const options = {
@@ -52,7 +49,7 @@ app.post("/create-short-link",async (req: Request, res: Response) => {
         'content-type': 'application/json',
         Authorization: vsl_short_io_auth
       },
-      data: JSON.stringify(req.body)
+      data: JSON.stringify(newBody)
     };
 
     try {
